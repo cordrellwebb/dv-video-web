@@ -69,4 +69,6 @@ class AgoraService {
   }
 }
 
-export default new AgoraService();
+// --- Fix for ESLint: Assign instance to variable before exporting ---
+const agoraServiceInstance = new AgoraService();
+export default agoraServiceInstance;
