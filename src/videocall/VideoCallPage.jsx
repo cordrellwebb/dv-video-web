@@ -4,7 +4,7 @@ import AgoraService from '../agora/AgoraService';
 
 // Paste your real App ID and the temp token here!
 const AGORA_APP_ID = 'cc6cf7886b574bc491efbf4371d79717';
-const AGORA_TOKEN = '007eJxTYDA4veH0htj1t9I0d//um3HI6n2fX0135/9iueMG7nOjCn0VGJKTzZLTzC0szJJMzU2Skk0sDVPTktJMjM0NU8wtzQ3NpzD4ZYhYh2cw+a9kZmRgZGBhYGQAASYwyQwmWcAkB4NLmEJYZkpqPgMDAG10IIw=';
+const AGORA_TOKEN = '007eJxTYFi05tHvlHWfT9rzhouF5T9zN/2QLXc+4UJvsKp0ZGEbt6ECQ3KyWXKauYWFWZKpuUlSsomlYWpaUpqJsblhirmluaG564qAjKOPIjOELm1gYGRgZGBhYGQAASYwyQwmWcAkB4NLmEJYZkpqPgMDAPmxIIQ=';
 // This is the only channel name valid for this token!
 const AGORA_CHANNEL = 'DV Video';
 
