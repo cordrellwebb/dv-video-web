@@ -77,13 +77,14 @@ export default function VideoCallPage() {
     navigate('/waiting');
   };
 
+  // --- CHANGED: removed .slice(0, 3) ---
   const allVideoBoxes = [
     {
       label: 'You (Seat 1)',
       ref: localContainerRef,
       key: 'local',
     },
-    ...remoteUsers.slice(0, 3).map((user) => ({
+    ...remoteUsers.map((user) => ({
       label: `User ${user.uid}`,
       ref: remoteRefs[user.uid] || React.createRef(),
       key: `remote-${user.uid}`,
