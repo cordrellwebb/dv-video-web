@@ -5,25 +5,23 @@ import AgoraService from '../agora/AgoraService';
 // Paste your real App ID and the temp token here!
 const AGORA_APP_ID = 'cc6cf7886b574bc491efbf4371d79717';
 const AGORA_TOKEN = '007eJxTYFi05tHvlHWfT9rzhouF5T9zN/2QLXc+4UJvsKp0ZGEbt6ECQ3KyWXKauYWFWZKpuUlSsomlYWpaUpqJsblhirmluaG564qAjKOPIjOELm1gYGRgZGBhYGQAASYwyQwmWcAkB4NLmEJYZkpqPgMDAPmxIIQ=';
-// This is the only channel name valid for this token!
 const AGORA_CHANNEL = 'DV Video';
 
 export default function VideoCallPage() {
-  // Ignore the :roomId param; always use the fixed channel for this token!
   const navigate = useNavigate();
 
   const [remoteUsers, setRemoteUsers] = useState([]);
+  const [remoteRefs, setRemoteRefs] = useState({});
   const localContainerRef = useRef(null);
 
-  const [remoteRefs, setRemoteRefs] = useState({});
-
+  // Initialize and join Agora channel
   useEffect(() => {
     let isMounted = true;
 
     const setupAgora = async () => {
       await AgoraService.initialize({
         appId: AGORA_APP_ID,
-        channel: AGORA_CHANNEL, // Always use this fixed name for your temp token
+        channel: AGORA_CHANNEL,
         token: AGORA_TOKEN,
         onUserPublished: (user, mediaType) => {
           setRemoteUsers((prev) => {
@@ -31,12 +29,11 @@ export default function VideoCallPage() {
             return [...prev, user];
           });
         },
-        onUserUnpublished: (user, mediaType) => {
+        onUserUnpublished: (user) => {
           setRemoteUsers((prev) => prev.filter((u) => u.uid !== user.uid));
         }
       });
 
-      // Play local video
       if (isMounted && localContainerRef.current) {
         AgoraService.playLocalVideo(localContainerRef.current);
       }
@@ -44,32 +41,36 @@ export default function VideoCallPage() {
 
     setupAgora();
 
-    // Clean up on unmount
     return () => {
       isMounted = false;
       AgoraService.leaveChannel();
     };
-  }, []); // No dependency on roomId; use fixed channel for this test
+  }, []);
 
-  // Play remote video when remoteUsers or their refs change
+  // Create refs for all remote users in a single pass
   useEffect(() => {
+    const refsMap = {};
     remoteUsers.forEach((user) => {
-      setRemoteRefs((prevRefs) => {
-        if (prevRefs[user.uid]) return prevRefs;
-        return { ...prevRefs, [user.uid]: React.createRef() };
-      });
+      refsMap[user.uid] = React.createRef();
     });
+    setRemoteRefs(refsMap);
   }, [remoteUsers]);
 
+  // Play remote video only when all refs are ready
   useEffect(() => {
-    remoteUsers.forEach((user) => {
-      const ref = remoteRefs[user.uid];
-      // ---- STEP A: Log info about the ref before playing video ----
-      console.log('Will play video for', user.uid, 'on ref', ref, 'DOM node', ref ? ref.current : undefined);
-      if (ref && ref.current) {
-        AgoraService.playRemoteVideo(user, ref.current);
-      }
-    });
+    if (remoteUsers.length === 0) return;
+
+    const allRefsReady = remoteUsers.every(user => remoteRefs[user.uid]?.current);
+
+    if (allRefsReady) {
+      remoteUsers.forEach((user) => {
+        const ref = remoteRefs[user.uid];
+        if (ref && ref.current) {
+          console.log('Will play video for', user.uid, 'on ref', ref, 'DOM node', ref.current);
+          AgoraService.playRemoteVideo(user, ref.current);
+        }
+      });
+    }
   }, [remoteUsers, remoteRefs]);
 
   const leaveCall = () => {
@@ -77,7 +78,7 @@ export default function VideoCallPage() {
     navigate('/waiting');
   };
 
-  // --- CHANGED: removed .slice(0, 3) ---
+  // Prepare video boxes including local and remote users
   const allVideoBoxes = [
     {
       label: 'You (Seat 1)',
@@ -86,7 +87,7 @@ export default function VideoCallPage() {
     },
     ...remoteUsers.map((user) => ({
       label: `User ${user.uid}`,
-      ref: remoteRefs[user.uid] || React.createRef(),
+      ref: remoteRefs[user.uid] || React.createRef(), // fallback in case refs haven't populated
       key: `remote-${user.uid}`,
     }))
   ];
@@ -113,7 +114,6 @@ export default function VideoCallPage() {
   );
 }
 
-// Styles as before
 const styles = {
   container: {
     minHeight: '100vh',

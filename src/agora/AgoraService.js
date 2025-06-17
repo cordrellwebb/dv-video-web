@@ -18,12 +18,24 @@ class AgoraService {
 
     // Subscribe to remote users
     this.client.on("user-published", async (user, mediaType) => {
-      await this.client.subscribe(user, mediaType);
-      if (onUserPublished) onUserPublished(user, mediaType);
+      try {
+        await this.client.subscribe(user, mediaType);
+        if (mediaType === 'video' && onUserPublished) {
+          console.log(`Subscribed to video for user ${user.uid}`);
+          onUserPublished(user, mediaType);
+        } else {
+          console.log(`Media type "${mediaType}" published by user ${user.uid}, ignoring for now.`);
+        }
+      } catch (err) {
+        console.error(`Failed to subscribe to ${mediaType} for user ${user.uid}`, err);
+      }
     });
 
     this.client.on("user-unpublished", (user, mediaType) => {
-      if (onUserUnpublished) onUserUnpublished(user, mediaType);
+      if (onUserUnpublished) {
+        console.log(`User ${user.uid} unpublished ${mediaType}`);
+        onUserUnpublished(user, mediaType);
+      }
     });
 
     // Join the channel
@@ -33,20 +45,28 @@ class AgoraService {
     [this.localAudioTrack, this.localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
     await this.client.publish([this.localAudioTrack, this.localVideoTrack]);
 
+    console.log("Local user published tracks");
+
     return uid;
   }
 
   // Play the local video in a given container (by ref or id)
   playLocalVideo(container) {
     if (this.localVideoTrack) {
+      console.log("Playing local video");
       this.localVideoTrack.play(container);
+    } else {
+      console.warn("Local video track not available");
     }
   }
 
-  // Play a remote video track in a given container (by ref or id)
+  // Play a remote video track in a given container (by ref or DOM node)
   playRemoteVideo(user, container) {
     if (user.videoTrack) {
+      console.log("Playing remote video for", user.uid, "on", container);
       user.videoTrack.play(container);
+    } else {
+      console.warn("No video track for user", user.uid);
     }
   }
 
@@ -65,6 +85,7 @@ class AgoraService {
     if (this.client) {
       await this.client.leave();
       this.client = null;
+      console.log("Left Agora channel");
     }
   }
 }
